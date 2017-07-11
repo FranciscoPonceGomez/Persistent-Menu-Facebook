@@ -74,15 +74,25 @@ namespace Persistent_Menu_Facebook.Dialogs
                       "]" +
                     "}";
 
-                    using (WebClient client = new WebClient())
+                    request = (HttpWebRequest)HttpWebRequest.Create("https://graph.facebook.com/v2.6/me/messenger_profile?access_token=" + PAGE_ACCESS_TOKEN);
+                    request.ContentType = "application/json; charset=utf-8";
+                    request.Method = "POST";
+
+                    using (StreamWriter streamWriter = new StreamWriter(request.GetRequestStream()))
                     {
-                        client.Headers[HttpRequestHeader.ContentType] = "application/json";
-                        _result = client.UploadString(
-                            "https://graph.facebook.com/v2.6/me/messenger_profile?access_token=" + PAGE_ACCESS_TOKEN,
-                            Newtonsoft.Json.JsonConvert.SerializeObject(Data)
-                        );
-                        await context.PostAsync($"{_result}");
+                        streamWriter.Write(Data);
                     }
+
+                    using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+                    {
+                        Stream dataStream = response.GetResponseStream();
+                        StreamReader reader = new StreamReader(dataStream);
+                        Data = reader.ReadToEnd();
+                        reader.Close();
+                        dataStream.Close();
+                    }
+                    _result = Newtonsoft.Json.JsonConvert.DeserializeObject(Data);
+                    await context.PostAsync($"{_result}");
                     break;
 
                 case "ShowMenu":
