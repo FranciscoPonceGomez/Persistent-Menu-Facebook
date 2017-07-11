@@ -24,7 +24,6 @@ namespace Persistent_Menu_Facebook.Dialogs
 
             var activity = await result as Activity;
             string PAGE_ACCESS_TOKEN = WebConfigurationManager.AppSettings["FacebookAccessToken"];
-            //String PAGE_ACCESS_TOKEN = "EAAJvLGRGsFwBAJbFtgq7w6e3YlXVXZBZA7uGZBZAJ7hD7T06lLTOapTzJOPZAAwZALiPMu9pIbDbiP4GXysHOvhilLlFIm1HDXZCrAqfBP3cmM2GzVhatt3Px9qYiRAHYLZBdaygoADXKhSFyFKPIlXvsZBoJNZAVSArcd6kwQCqTnfwZDZD"; //your facebook app token
             HttpWebRequest request;
             string option = activity.Text;
             Object _result = null;
@@ -32,11 +31,6 @@ namespace Persistent_Menu_Facebook.Dialogs
             switch (option)
             {
                 case "ActivateMenu":
-
-                    //Build JSON required - Or use a string , copy+paste
-                    //dynamic Data = new ExpandoObject();
-                    //Data.get_started = new ExpandoObject();
-                    //Data.get_started.payload = "GET_STARTED_PAYLOAD";
 
                      Data = "{" +
                       "'persistent_menu':[" +
@@ -109,7 +103,15 @@ namespace Persistent_Menu_Facebook.Dialogs
 
                 case "DeleteMenu":
                     request = (HttpWebRequest)HttpWebRequest.Create("https://graph.facebook.com/v2.6/me/messenger_profile?access_token=" + PAGE_ACCESS_TOKEN);
+                    request.ContentType = "application/json; charset=utf-8";
                     request.Method = "DELETE";
+
+                    using (StreamWriter streamWriter = new StreamWriter(request.GetRequestStream()))
+                    {
+                        Data = "{'fields':['persistent_menu']}";
+                        streamWriter.Write(Data);
+                    }
+
                     using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
                     {
                         Stream dataStream = response.GetResponseStream();
@@ -123,15 +125,44 @@ namespace Persistent_Menu_Facebook.Dialogs
 
                     break;
 
-                default:
-                    int length = (activity.Text ?? string.Empty).Length;
+                case "GetStarted":
+                    dynamic JsonData = new ExpandoObject();
+                    JsonData.get_started = new ExpandoObject();
+                    JsonData.get_started.payload = "GET_STARTED_PAYLOAD";
 
+                    request = (HttpWebRequest)HttpWebRequest.Create("https://graph.facebook.com/v2.6/me/messenger_profile?access_token=" + PAGE_ACCESS_TOKEN);
+                    request.ContentType = "application/json; charset=utf-8";
+                    request.Method = "POST";
+
+                    using (StreamWriter streamWriter = new StreamWriter(request.GetRequestStream()))
+                    {
+                        streamWriter.Write(JsonData);
+                    }
+
+                    using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+                    {
+                        Stream dataStream = response.GetResponseStream();
+                        StreamReader reader = new StreamReader(dataStream);
+                        Data = reader.ReadToEnd();
+                        reader.Close();
+                        dataStream.Close();
+                    }
+                    _result = Newtonsoft.Json.JsonConvert.DeserializeObject(Data);
+                    await context.PostAsync($"{_result}");
+                    break;
+
+                default:
                     // return our reply to the user
                     await context.PostAsync($"You sent {activity.Text}. The available options are: \n\t1: ActivateMenu \n\t2: ShowMenu \n\t3: DeleteMenu \n ");
                     break;
             }
 
         context.Wait(MessageReceivedAsync);
+        }
+
+        private static void HttpRequestHelper(Uri uri, string method, object JsonObject)
+        {
+
         }
     }
 }
