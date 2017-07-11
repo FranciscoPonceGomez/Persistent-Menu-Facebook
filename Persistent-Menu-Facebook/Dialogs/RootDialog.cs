@@ -5,6 +5,7 @@ using Microsoft.Bot.Connector;
 using System.Net;
 using System.Dynamic;
 using System.IO;
+using System.Web.Configuration;
 
 namespace Persistent_Menu_Facebook.Dialogs
 {
@@ -20,15 +21,17 @@ namespace Persistent_Menu_Facebook.Dialogs
 
         private async Task MessageReceivedAsync(IDialogContext context, IAwaitable<object> result)
         {
+
             var activity = await result as Activity;
-            String PAGE_ACCESS_TOKEN = "EAAJvLGRGsFwBAJbFtgq7w6e3YlXVXZBZA7uGZBZAJ7hD7T06lLTOapTzJOPZAAwZALiPMu9pIbDbiP4GXysHOvhilLlFIm1HDXZCrAqfBP3cmM2GzVhatt3Px9qYiRAHYLZBdaygoADXKhSFyFKPIlXvsZBoJNZAVSArcd6kwQCqTnfwZDZD"; //your facebook app token
+            string PAGE_ACCESS_TOKEN = WebConfigurationManager.AppSettings["FacebookAccessToken"];
+            //String PAGE_ACCESS_TOKEN = "EAAJvLGRGsFwBAJbFtgq7w6e3YlXVXZBZA7uGZBZAJ7hD7T06lLTOapTzJOPZAAwZALiPMu9pIbDbiP4GXysHOvhilLlFIm1HDXZCrAqfBP3cmM2GzVhatt3Px9qYiRAHYLZBdaygoADXKhSFyFKPIlXvsZBoJNZAVSArcd6kwQCqTnfwZDZD"; //your facebook app token
+            HttpWebRequest request;
             string option = activity.Text;
             Object _result = null;
             string Data = string.Empty;
             switch (option)
             {
                 case "ActivateMenu":
-                    
 
                     //Build JSON required - Or use a string , copy+paste
                     //dynamic Data = new ExpandoObject();
@@ -77,7 +80,6 @@ namespace Persistent_Menu_Facebook.Dialogs
                       "]" +
                     "}";
 
-                    //Console.WriteLine("About to send : " + Newtonsoft.Json.JsonConvert.SerializeObject(Data));
                     using (WebClient client = new WebClient())
                     {
                         client.Headers[HttpRequestHeader.ContentType] = "application/json";
@@ -85,13 +87,12 @@ namespace Persistent_Menu_Facebook.Dialogs
                             "https://graph.facebook.com/v2.6/me/messenger_profile?access_token=" + PAGE_ACCESS_TOKEN,
                             Newtonsoft.Json.JsonConvert.SerializeObject(Data)
                         );
-                        //Console.WriteLine("Result : " + _result);
-                        await context.PostAsync($"Result: {_result}");
+                        await context.PostAsync($"{_result}");
                     }
                     break;
 
                 case "ShowMenu":
-                    HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create("https://graph.facebook.com/v2.6/me/messenger_profile?fields=persistent_menu&access_token=" + PAGE_ACCESS_TOKEN);
+                    request = (HttpWebRequest)HttpWebRequest.Create("https://graph.facebook.com/v2.6/me/messenger_profile?fields=persistent_menu&access_token=" + PAGE_ACCESS_TOKEN);
                     request.Method = "GET";
                     using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
                     {
@@ -102,18 +103,31 @@ namespace Persistent_Menu_Facebook.Dialogs
                         dataStream.Close();
                     }
                     _result = Newtonsoft.Json.JsonConvert.DeserializeObject(Data);
-                    await context.PostAsync($"Result: {_result}");
+                    await context.PostAsync($"{_result}");
 
                     break;
 
-                case "DisableMenu":
+                case "DeleteMenu":
+                    request = (HttpWebRequest)HttpWebRequest.Create("https://graph.facebook.com/v2.6/me/messenger_profile?access_token=" + PAGE_ACCESS_TOKEN);
+                    request.Method = "DELETE";
+                    using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+                    {
+                        Stream dataStream = response.GetResponseStream();
+                        StreamReader reader = new StreamReader(dataStream);
+                        Data = reader.ReadToEnd();
+                        reader.Close();
+                        dataStream.Close();
+                    }
+                    _result = Newtonsoft.Json.JsonConvert.DeserializeObject(Data);
+                    await context.PostAsync($"{_result}");
+
                     break;
 
                 default:
                     int length = (activity.Text ?? string.Empty).Length;
 
                     // return our reply to the user
-                    await context.PostAsync($"You sent {activity.Text} which was {length} characters");
+                    await context.PostAsync($"You sent {activity.Text}. The available options are: \n\t1: ActivateMenu \n\t2: ShowMenu \n\t3: DeleteMenu \n ");
                     break;
             }
 
