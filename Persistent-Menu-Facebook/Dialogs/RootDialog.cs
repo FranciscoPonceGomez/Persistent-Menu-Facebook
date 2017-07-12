@@ -46,7 +46,6 @@ namespace Persistent_Menu_Facebook.Dialogs
                 switch (option)
                 {
                     case Options.ActivateMenu:
-
                         Data = "{" +
                          "'persistent_menu':[" +
                            "{" +
@@ -89,56 +88,19 @@ namespace Persistent_Menu_Facebook.Dialogs
                          "]" +
                        "}";
 
-                        request = (HttpWebRequest)HttpWebRequest.Create("https://graph.facebook.com/v2.6/me/messenger_profile?access_token=" + PAGE_ACCESS_TOKEN);
-                        request.ContentType = "application/json; charset=utf-8";
-                        request.Method = "POST";
-
-                        using (StreamWriter streamWriter = new StreamWriter(request.GetRequestStream()))
-                        {
-                            streamWriter.Write(Data);
-                        }
-
-                        using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
-                        {
-                            Stream dataStream = response.GetResponseStream();
-                            StreamReader reader = new StreamReader(dataStream);
-                            Data = reader.ReadToEnd();
-                            reader.Close();
-                            dataStream.Close();
-                        }
-                        _result = Newtonsoft.Json.JsonConvert.DeserializeObject(Data);
+                        _result = HttpRequestHelper(BASE_URI + "access_token=" + PAGE_ACCESS_TOKEN, "POST", Data);
                         await context.PostAsync($"{_result}");
                         break;
 
                     case Options.ShowMenu:
-
                         _result = HttpRequestHelper(BASE_URI + "fields=persistent_menu&access_token=" + PAGE_ACCESS_TOKEN, "GET", null);
                         await context.PostAsync($"{_result}");
-
                         break;
 
                     case Options.DeleteMenu:
-                        request = (HttpWebRequest)HttpWebRequest.Create("https://graph.facebook.com/v2.6/me/messenger_profile?access_token=" + PAGE_ACCESS_TOKEN);
-                        request.ContentType = "application/json; charset=utf-8";
-                        request.Method = "DELETE";
-
-                        using (StreamWriter streamWriter = new StreamWriter(request.GetRequestStream()))
-                        {
-                            Data = "{'fields':['persistent_menu']}";
-                            streamWriter.Write(Data);
-                        }
-
-                        using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
-                        {
-                            Stream dataStream = response.GetResponseStream();
-                            StreamReader reader = new StreamReader(dataStream);
-                            Data = reader.ReadToEnd();
-                            reader.Close();
-                            dataStream.Close();
-                        }
-                        _result = Newtonsoft.Json.JsonConvert.DeserializeObject(Data);
+                        Data = "{'fields':['persistent_menu']}";
+                        _result = HttpRequestHelper(BASE_URI + "access_token=" + PAGE_ACCESS_TOKEN, "DELETE", Data);
                         await context.PostAsync($"{_result}");
-
                         break;
 
                     case Options.GetStarted:
@@ -155,8 +117,8 @@ namespace Persistent_Menu_Facebook.Dialogs
                         break;
                 }
             }
-            
-            await context.PostAsync($"You sent {activity.Text}. The available options are:  {optionsString}" );
+            else
+                await context.PostAsync($"You sent {activity.Text}. The available options are:  {optionsString}" );
             context.Wait(MessageReceivedAsync);
         }
 
