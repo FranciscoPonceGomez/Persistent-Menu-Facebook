@@ -8,6 +8,7 @@ using System.IO;
 using System.Web.Configuration;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json.Linq;
 
 namespace Persistent_Menu_Facebook.Dialogs
 {
@@ -15,6 +16,8 @@ namespace Persistent_Menu_Facebook.Dialogs
     public class RootDialog : IDialog<object>
     {
         public const string BASE_URI = "https://graph.facebook.com/v2.6/me/messenger_profile?";
+        public static string PAGE_ACCESS_TOKEN = WebConfigurationManager.AppSettings["FacebookAccessToken"];
+
 
         public enum Options
         {
@@ -30,64 +33,18 @@ namespace Persistent_Menu_Facebook.Dialogs
 
         private async Task MessageReceivedAsync(IDialogContext context, IAwaitable<object> result)
         {
-
             var activity = await result as Activity;
-            string PAGE_ACCESS_TOKEN = WebConfigurationManager.AppSettings["FacebookAccessToken"];
-            HttpWebRequest request;
-            //string option = activity.Text;
             Object _result = null;
             string Data = string.Empty;
             string Uri = BASE_URI + "access_token=" + PAGE_ACCESS_TOKEN;
             Options option;
-            string optionsString = string.Empty;
-            foreach (Options op in EnumUtil.GetValues<Options>()) { optionsString += op + ", "; };
             if (Enum.TryParse(activity.Text, out option))
             {
                 switch (option)
                 {
                     case Options.ActivateMenu:
-                        Data = "{" +
-                         "'persistent_menu':[" +
-                           "{" +
-                             "'locale':'default'," +
-                             "'composer_input_disabled':true," +
-                             "'call_to_actions':[" +
-                               "{" +
-                                 "'title':'My Account', " +
-                                 "'type':'nested', " +
-                                 "'call_to_actions':[ " +
-                                   "{" +
-                                     "'title':'Pay Bill', " +
-                                     "'type':'postback'," +
-                                     "'payload':'PAYBILL_PAYLOAD'" +
-                                   "}," +
-                                   "{" +
-                                     "'title':'History'," +
-                                     "'type':'postback'," +
-                                     "'payload':'HISTORY_PAYLOAD'" +
-                                   "}," +
-                                   "{" +
-                                     "'title':'Contact Info'," +
-                                     "'type':'postback'," +
-                                     "'payload':'CONTACT_INFO_PAYLOAD'" +
-                                   "}" +
-                                 "]" +
-                               "}," +
-                               "{" +
-                                 "'type':'web_url'," +
-                                 "'title':'Latest News'," +
-                                 "'url':'http://petershats.parseapp.com/hat-news'," +
-                                 "'webview_height_ratio':'full'" +
-                               "}" +
-                             "]" +
-                           "}," +
-                           "{" +
-                             "'locale':'zh_CN'," +
-                             "'composer_input_disabled':false" +
-                           "}" +
-                         "]" +
-                       "}";
-
+                        TextReader tr = new StreamReader(AppDomain.CurrentDomain.BaseDirectory + "PersistentMenu.json");
+                        Data = tr.ReadToEnd();
                         _result = HttpRequestHelper(BASE_URI + "access_token=" + PAGE_ACCESS_TOKEN, "POST", Data);
                         await context.PostAsync($"{_result}");
                         break;
@@ -112,13 +69,15 @@ namespace Persistent_Menu_Facebook.Dialogs
                         break;
 
                     default:
-                        // return our reply to the user
-                        await context.PostAsync($"You sent {activity.Text}. The available options are: {optionsString}");
                         break;
                 }
             }
             else
-                await context.PostAsync($"You sent {activity.Text}. The available options are:  {optionsString}" );
+            {
+                string optionsString = string.Empty;
+                foreach (Options op in EnumUtil.GetValues<Options>()) { optionsString += op + ", "; };
+                await context.PostAsync($"You sent {activity.Text}. The available options are:  {optionsString}");
+            }
             context.Wait(MessageReceivedAsync);
         }
 
