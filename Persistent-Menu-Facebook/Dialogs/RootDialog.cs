@@ -96,17 +96,8 @@ namespace Persistent_Menu_Facebook.Dialogs
                     break;
 
                 case "ShowMenu":
-                    request = (HttpWebRequest)HttpWebRequest.Create("https://graph.facebook.com/v2.6/me/messenger_profile?fields=persistent_menu&access_token=" + PAGE_ACCESS_TOKEN);
-                    request.Method = "GET";
-                    using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
-                    {
-                        Stream dataStream = response.GetResponseStream();
-                        StreamReader reader = new StreamReader(dataStream);
-                        Data = reader.ReadToEnd();
-                        reader.Close();
-                        dataStream.Close();
-                    }
-                    _result = Newtonsoft.Json.JsonConvert.DeserializeObject(Data);
+
+                    _result = HttpRequestHelper("https://graph.facebook.com/v2.6/me/messenger_profile?fields=persistent_menu&access_token=" + PAGE_ACCESS_TOKEN, "GET", null);
                     await context.PostAsync($"{_result}");
 
                     break;
@@ -139,25 +130,7 @@ namespace Persistent_Menu_Facebook.Dialogs
                     dynamic JsonData = new ExpandoObject();
                     JsonData.get_started = new ExpandoObject();
                     JsonData.get_started.payload = "GET_STARTED_PAYLOAD";
-
-                    request = (HttpWebRequest)HttpWebRequest.Create("https://graph.facebook.com/v2.6/me/messenger_profile?access_token=" + PAGE_ACCESS_TOKEN);
-                    request.ContentType = "application/json; charset=utf-8";
-                    request.Method = "POST";
-
-                    using (StreamWriter streamWriter = new StreamWriter(request.GetRequestStream()))
-                    {
-                        streamWriter.Write(JsonData);
-                    }
-
-                    using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
-                    {
-                        Stream dataStream = response.GetResponseStream();
-                        StreamReader reader = new StreamReader(dataStream);
-                        Data = reader.ReadToEnd();
-                        reader.Close();
-                        dataStream.Close();
-                    }
-                    _result = Newtonsoft.Json.JsonConvert.DeserializeObject(Data);
+                    _result = HttpRequestHelper("https://graph.facebook.com/v2.6/me/messenger_profile?access_token=" + PAGE_ACCESS_TOKEN, "POST", JsonData);
                     await context.PostAsync($"{_result}");
                     break;
 
@@ -170,9 +143,30 @@ namespace Persistent_Menu_Facebook.Dialogs
         context.Wait(MessageReceivedAsync);
         }
 
-        private static void HttpRequestHelper(Uri uri, string method, object JsonObject)
+        private static Object HttpRequestHelper(string Uri, string Method, dynamic JsonData)
         {
+            HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(Uri);
+            request.ContentType = "application/json; charset=utf-8";
+            request.Method = Method;
+            string Data = string.Empty;
 
+            if (!Method.Equals("GET"))
+            {
+                using (StreamWriter streamWriter = new StreamWriter(request.GetRequestStream()))
+                {
+                    streamWriter.Write(JsonData);
+                }
+            }
+
+            using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+            {
+                Stream dataStream = response.GetResponseStream();
+                StreamReader reader = new StreamReader(dataStream);
+                Data = reader.ReadToEnd();
+                reader.Close();
+                dataStream.Close();
+            }
+            return Newtonsoft.Json.JsonConvert.DeserializeObject(Data);
         }
     }
 }
