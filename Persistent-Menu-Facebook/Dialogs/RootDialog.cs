@@ -18,7 +18,6 @@ namespace Persistent_Menu_Facebook.Dialogs
         public const string BASE_URI = "https://graph.facebook.com/v2.6/me/messenger_profile?";
         public static string PAGE_ACCESS_TOKEN = WebConfigurationManager.AppSettings["FacebookAccessToken"];
 
-
         public enum Options
         {
             GetStarted, ActivateMenu, ShowMenu, DeleteMenu
@@ -46,18 +45,15 @@ namespace Persistent_Menu_Facebook.Dialogs
                         TextReader tr = new StreamReader(AppDomain.CurrentDomain.BaseDirectory + "PersistentMenu.json");
                         Data = tr.ReadToEnd();
                         _result = HttpRequestHelper(BASE_URI + "access_token=" + PAGE_ACCESS_TOKEN, "POST", Data);
-                        await context.PostAsync($"{_result}");
                         break;
 
                     case Options.ShowMenu:
                         _result = HttpRequestHelper(BASE_URI + "fields=persistent_menu&access_token=" + PAGE_ACCESS_TOKEN, "GET", null);
-                        await context.PostAsync($"{_result}");
                         break;
 
                     case Options.DeleteMenu:
                         Data = "{'fields':['persistent_menu']}";
                         _result = HttpRequestHelper(BASE_URI + "access_token=" + PAGE_ACCESS_TOKEN, "DELETE", Data);
-                        await context.PostAsync($"{_result}");
                         break;
 
                     case Options.GetStarted:
@@ -65,12 +61,12 @@ namespace Persistent_Menu_Facebook.Dialogs
                         JsonData.get_started = new ExpandoObject();
                         JsonData.get_started.payload = "GET_STARTED_PAYLOAD";
                         _result = HttpRequestHelper(BASE_URI + "access_token=" + PAGE_ACCESS_TOKEN, "POST", JsonData);
-                        await context.PostAsync($"{_result}");
                         break;
 
                     default:
                         break;
                 }
+                await context.PostAsync($"{_result}");
             }
             else
             {
