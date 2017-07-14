@@ -17,6 +17,7 @@ namespace Persistent_Menu_Facebook.Dialogs
     {
         public const string BASE_URI = "https://graph.facebook.com/v2.6/me/messenger_profile?";
         public static string PAGE_ACCESS_TOKEN = WebConfigurationManager.AppSettings["FacebookAccessToken"];
+        public static bool isAdmin = true; //Implement a way to tell an admin apart from user like asking them to paste the Page Access Token. 
 
         public enum Options
         {
@@ -35,10 +36,10 @@ namespace Persistent_Menu_Facebook.Dialogs
             var activity = await result as Activity;
             Object _result = null;
             string Data = string.Empty;
-            string Uri = BASE_URI + "access_token=" + PAGE_ACCESS_TOKEN;
             Options option;
-            if (Enum.TryParse(activity.Text, out option))
+            if (Enum.TryParse(activity.Text, out option) && isAdmin)
             {
+                // (Admin) Activate / desactivate the permanent menu, set the Get Started button at the start of the conversation or show the content of the permanent menu.
                 switch (option)
                 {
                     case Options.ActivateMenu:
@@ -70,9 +71,35 @@ namespace Persistent_Menu_Facebook.Dialogs
             }
             else
             {
-                string optionsString = string.Empty;
-                foreach (Options op in EnumUtil.GetValues<Options>()) { optionsString += op + ", "; };
-                await context.PostAsync($"You sent {activity.Text}. The available options are:  {optionsString}");
+                // Manage Postback requests from Messeger
+                switch (activity.Text)
+                {
+                    case "PAYBILL_PAYLOAD":
+                        //DoSomething();
+                        await context.PostAsync($"The user clicked 'Pay Bill' in the permanent menu");
+                        break;
+
+                    case "HISTORY_PAYLOAD":
+                        //DoSomething();
+                        await context.PostAsync($"The user clicked 'History' in the permanent menu");
+                        break;
+
+                    case "CONTACT_INFO_PAYLOAD":
+                        //DoSomething();
+                        await context.PostAsync($"The user clicked 'Contact Info' in the permanent menu");
+                        break;
+
+                    default:
+                        if (isAdmin)
+                        {
+                            string optionsString = string.Empty;
+                            foreach (Options op in EnumUtil.GetValues<Options>()) { optionsString += op + ", "; };
+                            await context.PostAsync($"You sent {activity.Text}. The available options are:  {optionsString}");
+                        }
+                        else
+                            await context.PostAsync($"Sorry I didn't understand your question");
+                        break;
+                }
             }
             context.Wait(MessageReceivedAsync);
         }
