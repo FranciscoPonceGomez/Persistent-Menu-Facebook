@@ -15,9 +15,9 @@ namespace Persistent_Menu_Facebook.Dialogs
     [Serializable]
     public class RootDialog : IDialog<object>
     {
-        public const string BASE_URI = "https://graph.facebook.com/v2.6/me/messenger_profile?";
-        public static string PAGE_ACCESS_TOKEN = WebConfigurationManager.AppSettings["FacebookAccessToken"];
-        public static bool isAdmin = true; //Implement a way to tell an admin apart from user like asking them to paste the Page Access Token. 
+        private const string BASE_URI = "https://graph.facebook.com/v2.6/me/messenger_profile?";
+        private static string PAGE_ACCESS_TOKEN = WebConfigurationManager.AppSettings["FacebookAccessToken"];
+        private static bool isAdmin = true; //Implement a way to tell an admin apart from user like asking them to paste the Page Access Token. 
 
         public enum Options
         {
