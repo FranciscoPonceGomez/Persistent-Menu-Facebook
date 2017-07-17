@@ -17,7 +17,7 @@ namespace Persistent_Menu_Facebook.Dialogs
     {
         private const string BASE_URI = "https://graph.facebook.com/v2.6/me/messenger_profile?";
         private static string PAGE_ACCESS_TOKEN = WebConfigurationManager.AppSettings["FacebookAccessToken"];
-        private static bool isAdmin = true; //Implement a way to tell an admin apart from user like asking them to paste the Page Access Token. 
+        private static bool isAdmin = true; //ToDo: Implement a way to tell an admin apart from user like asking them to paste the Page Access Token. 
 
         public enum Options
         {
